@@ -10,15 +10,16 @@ logger = Logger.new(STDOUT)
 logger.level = Logger::WARN
 
 Geocoder.configure(
+  :ip_lookup => :telize,
   :logger => logger,
-  :timeout => 10,
+  :timeout => 3,
 )
 
 
 def geocode_city(ip)
   results = Geocoder.search(ip)
   if geo = results.first
-    if geo.city.empty?
+    if not geo.city or geo.city.empty?
       return geo.country
     else
       return "#{geo.city}, #{geo.country}"
