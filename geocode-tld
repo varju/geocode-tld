@@ -11,6 +11,7 @@ logger.level = Logger::WARN
 
 Geocoder.configure(
   :logger => logger,
+  :timeout => 10,
 )
 
 
@@ -31,16 +32,19 @@ end
 Resolv::DNS.open do |dns|
   ns_names = dns.getresources(tld, Resolv::DNS::Resource::IN::NS).map { |r| r.name.to_s }
   ns_names.each do |ns_name|
-    puts "#{ns_name}:"
     ips = dns.getaddresses(ns_name).map { |r| r.address.unpack('CCCC').join('.') }
-    ips.each do |ip|
+    cities = ips.flat_map do |ip|
       city = geocode_city(ip)
       if city
-        puts "  #{ip}: #{city}"
+        [city]
       else
-        puts "  Error: could not geocode #{ip}"
+        STDERR.puts "Error: could not geocode #{ip} for #{ns_name}"
+        []
       end
     end
-    puts
+
+    # assume most TLDs use a single IP per name server
+    city_str = cities.length == 1 ? cities.first : cities
+    puts "#{ns_name}: #{city_str}"
   end
 end
