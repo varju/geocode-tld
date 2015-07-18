@@ -32,7 +32,7 @@ end
 
 Resolv::DNS.open do |dns|
   ns_names = dns.getresources(tld, Resolv::DNS::Resource::IN::NS).map { |r| r.name.to_s }
-  ns_names.each do |ns_name|
+  ns_names.sort.each do |ns_name|
     ips = dns.getaddresses(ns_name).map { |r| r.address.unpack('CCCC').join('.') }
     cities = ips.flat_map do |ip|
       city = geocode_city(ip)
