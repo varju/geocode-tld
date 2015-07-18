@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+require 'geocoder'
+
+tld = ARGV.shift
+abort "Usage: #{$0} <tld>" unless tld
+
+
+logger = Logger.new(STDOUT)
+logger.level = Logger::WARN
+
+Geocoder.configure(
+  :logger => logger,
+)
+
+
+def geocode_city(ip)
+  results = Geocoder.search(ip)
+  if geo = results.first
+    if geo.city.empty?
+      return geo.country
+    else
+      return "#{geo.city}, #{geo.country}"
+    end
+  else
+    return nil
+  end
+end
+
+
+Resolv::DNS.open do |dns|
+  ns_names = dns.getresources(tld, Resolv::DNS::Resource::IN::NS).map { |r| r.name.to_s }
+  ns_names.each do |ns_name|
+    puts "#{ns_name}:"
+    ips = dns.getaddresses(ns_name).map { |r| r.address.unpack('CCCC').join('.') }
+    ips.each do |ip|
+      city = geocode_city(ip)
+      if city
+        puts "  #{ip}: #{city}"
+      else
+        puts "  Error: could not geocode #{ip}"
+      end
+    end
+    puts
+  end
+end
